@@ -5,7 +5,11 @@ import gym
 import matplotlib.pyplot as plt
 from tqdm.notebook import tqdm
 from collections import deque
-from torch import nn
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torchvision.transforms as T
 
 class ReplayMemory(object):
 
@@ -84,7 +88,7 @@ def choose_action_softmax(net, state, temperature, device):
 
     # Apply softmax with temp
     temperature = max(temperature, 1e-8) # set a minimum to the temperature for numerical stability
-    softmax_out = nn.functional.softmax(net_out / temperature, dim=0).cpu().numpy()
+    softmax_out = nn.functional.softmax(net_out / temperature, dim=0).cpu().reshape(-1).numpy()
                 
     # Sample the action using softmax output as mass pdf
     all_possible_actions = np.arange(0, softmax_out.shape[-1])
