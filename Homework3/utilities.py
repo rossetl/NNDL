@@ -21,7 +21,8 @@ class ReplayMemory(object):
     
     def sample(self, batch_size):
         batch_size = min(batch_size, len(self)) # Get all the samples if the requested batch_size is higher than the number of sample currently in the memory
-        return random.sample(self.memory, batch_size) # Randomly select "batch_size" samples
+        batch = random.sample(self.memory, batch_size) # Randomly select "batch_size" samples
+        return batch
 
     def __len__(self):
         return len(self.memory) # Return the number of samples currently stored in the memory
@@ -88,7 +89,7 @@ def choose_action_softmax(net, state, temperature, device):
 
     # Apply softmax with temp
     temperature = max(temperature, 1e-8) # set a minimum to the temperature for numerical stability
-    softmax_out = nn.functional.softmax(net_out / temperature, dim=0).cpu().reshape(-1).numpy()
+    softmax_out = nn.functional.softmax(net_out / temperature, dim=1).detach().cpu().reshape(-1).numpy()
                 
     # Sample the action using softmax output as mass pdf
     all_possible_actions = np.arange(0, softmax_out.shape[-1])
@@ -103,13 +104,16 @@ def update_step(policy_net, target_net, replay_mem, gamma, optimizer, loss_fn, b
     batch_size = len(batch)
 
     # Create tensors for each element of the batch
-    states      = torch.tensor([s[0] for s in batch], dtype=torch.float32, device=device)
+    states      = torch.cat([s[0] for s in batch], 0)
     actions     = torch.tensor([s[1] for s in batch], dtype=torch.int64, device=device)
     rewards     = torch.tensor([s[3] for s in batch], dtype=torch.float32, device=device)
 
     # Compute a mask of non-final states (all the elements where the next state is not None)
-    non_final_next_states = torch.tensor([s[2] for s in batch if s[2] is not None], dtype=torch.float32, device=device) # the next state can be None if the game has ended
+    non_final_next_states = torch.cat([s[2] for s in batch if s[2] is not None], 0) # the next state can be None if the game has ended
     non_final_mask = torch.tensor([s[2] is not None for s in batch], dtype=torch.bool, device=device)
+    
+    states.squeeze_(1)
+    non_final_next_states.squeeze_(1)
 
     # Compute all the Q values (forward pass)
     policy_net.train()
