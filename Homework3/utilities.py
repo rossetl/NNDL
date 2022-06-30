@@ -27,22 +27,6 @@ class ReplayMemory(object):
     def __len__(self):
         return len(self.memory) # Return the number of samples currently stored in the memory
     
-class DQN(nn.Module):
-
-    def __init__(self, state_space_dim, action_space_dim):
-        super().__init__()
-
-        self.linear = nn.Sequential(
-            nn.Linear(in_features=state_space_dim, out_features=128),
-            nn.Tanh(),
-            nn.Linear(in_features=128, out_features=128),
-            nn.Tanh(),
-            nn.Linear(in_features=128, out_features=action_space_dim)
-                )
-
-    def forward(self, x):
-        return self.linear(x)
-    
     
 def choose_action_epsilon_greedy(net, state, epsilon, device):
     
